@@ -98,7 +98,7 @@ const Board = ({ board }) => {
   }
 
   return <DragDropContext onDragEnd={({ source, destination, type, draggableId }) => {
-    if (!destinfation || (source.droppableId && source.index) === (destination.droppableId === destination.index)) {
+    if (!destination || (source.droppableId && source.index) === (destination.droppableId === destination.index)) {
       return;
     }
 
