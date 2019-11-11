@@ -1,4 +1,4 @@
-# empty-project
+# GUN Kanban
 
 Empty project.
 
