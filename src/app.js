@@ -69,13 +69,16 @@ const App = () => {
       }
     }}><input ref={boardId} placeholder="(New) board ID e.g. nickstodos" /></form></div>
   }
-  return <Board board={board} />
+  return <Board boardId={board} />
 }
-const Board = ({ board }) => {
+const Board = ({ boardId }) => {
   const [gun, setGun] = useState(null)
   const [cs, setCs] = useState(null)
+  const [editing, setEditing] = useState(false)
+  const [board, setBoard] = useState({})
   const [lanes, setLanes] = useState([])
   const [laneCards, setLaneCards] = useState({})
+  const [newBoardTitle, setNewBoardTitle] = useState('')
   const newLaneTitle = useRef(null)
 
   useEffect(() => {
@@ -89,7 +92,7 @@ const Board = ({ board }) => {
 
   useEffect(() => {
     if (gun) {
-      gun.get(board).get('lanes').map().on(updateCollection(setLanes, cs))
+      gun.get(boardId).on(board => setBoard(b => ({ ...b, ...board }))).get('lanes').map().on(updateCollection(setLanes, cs))
     }
   }, [gun])
 
@@ -135,32 +138,45 @@ const Board = ({ board }) => {
     }
   }}>
     <div className="board">
-      <Droppable droppableId="board" type="LANE" direction="horizontal">
-        {(provided, snapshot) => <div ref={provided.innerRef} className="lanes" {...provided.droppableProps}>
-          {lanes.map((lane, i) => {
-            const id = getId(lane)
-            return <Lane
-              key={id}
-              index={i}
-              lane={lane}
-              cards={laneCards[id]}
-              gun={gun}
-              cs={cs}
-              onCard={updateSubCollection(setLaneCards, cs, id)} />
-          })}
-          {provided.placeholder}
-        </div>}
-      </Droppable>
-      <div className="new-lane">
-        <form onSubmit={e => {
-          e.preventDefault();
-          gun.get(board).get('lanes').set({
-            title: newLaneTitle.current.value
-          })
-          newLaneTitle.current.value = ''
-        }}>
-          <input ref={newLaneTitle} placeholder="new lane" />
-        </form>
+      {editing ? <form onSubmit={e => {
+        e.preventDefault();
+        gun.get(boardId).get('title').put(newBoardTitle)
+        setEditing(false)
+      }}>
+        <input value={newBoardTitle} onChange={e => setNewBoardTitle(e.target.value)} placeholder="board title" />
+      </form>
+        : <h1 onDoubleClick={e => {
+          setNewBoardTitle(board.title)
+          setEditing(true)
+        }} className="board-title">{board && board.title || boardId}</h1>}
+      <div className="board-content">
+        <Droppable droppableId="board" type="LANE" direction="horizontal">
+          {(provided, snapshot) => <div ref={provided.innerRef} className="lanes" {...provided.droppableProps}>
+            {lanes.map((lane, i) => {
+              const id = getId(lane)
+              return <Lane
+                key={id}
+                index={i}
+                lane={lane}
+                cards={laneCards[id]}
+                gun={gun}
+                cs={cs}
+                onCard={updateSubCollection(setLaneCards, cs, id)} />
+            })}
+            {provided.placeholder}
+          </div>}
+        </Droppable>
+        <div className="new-lane">
+          <form onSubmit={e => {
+            e.preventDefault();
+            gun.get(boardId).get('lanes').set({
+              title: newLaneTitle.current.value
+            })
+            newLaneTitle.current.value = ''
+          }}>
+            <input ref={newLaneTitle} placeholder="new lane" />
+          </form>
+        </div>
       </div>
     </div>
   </DragDropContext>
@@ -233,7 +249,8 @@ const Card = ({ laneId, index, card, gun }) => {
         </form> : <div onDoubleClick={e => {
           setCardTitle(card.title)
           setEditing(true)
-        }} className="card-title">{card.title || 'No title'}</div>}
+        }} className="card-title">{card.title || 'No title'}{' '}
+            <a href={`/?board=${id}`} target="_blank" className="card-link">#</a></div>}
       </div>
     }</Draggable>
 }

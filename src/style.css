@@ -22,6 +22,18 @@ body, html, #app {
 
 .board {
     display: flex;
+    flex-direction: column;
+}
+
+.board-title {
+    font-size: 120%;
+    color: white;
+    margin: 0.5rem;
+    cursor: pointer;
+}
+
+.board-content {
+    display: flex;
     flex-direction: row;
     align-items: flex-start;
 }
@@ -64,4 +76,17 @@ input {
     padding: 0.25rem;
     margin: 0.25rem;
     border-radius: 0.25rem;
+}
+
+.card-link {
+    color: lightgray;
+    text-decoration: none;
+    display: block;
+    visibility: hidden;
+    float: right;
+    font-size: 80%;
+}
+
+.card:hover .card-link {
+    visibility: visible;    
 }
