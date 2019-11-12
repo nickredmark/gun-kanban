@@ -1,6 +1,4 @@
-# empty-project
-
-Empty project.
+# GUN Kanban
 
 ## Building and running on localhost
 
@@ -28,15 +26,13 @@ To create a development build:
 npm run build-dev
 ```
 
+To run the build open the file `public/index.html` in your browser
+
 ## Deploy on now
 
 ```
 now
 ```
-
-## Running
-
-Open the file `public/index.html` in your browser
 
 ## Credits
 
