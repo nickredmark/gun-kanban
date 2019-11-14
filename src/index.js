@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./app";
-import './style.css'
+import "./style.css";
 
 var mountNode = document.getElementById("app");
 ReactDOM.render(<App name="GUN Kanban" />, mountNode);
