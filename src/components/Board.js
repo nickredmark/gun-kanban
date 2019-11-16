@@ -1,12 +1,28 @@
 import React, { useState, useRef } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
+const getSet = (data, id, key) => {
+  const entity = data[id];
+  if (!entity || !entity[key]) {
+    return [];
+  }
+  const set = data[entity[key]["#"]];
+  if (!set) {
+    return [];
+  }
+  const arr = Object.keys(set)
+    .filter(key => key !== "_")
+    .map(key => set[key])
+    .filter(Boolean)
+    .map(ref => data[ref["#"]]);
+  return arr;
+};
+
 export const Board = ({
+  id,
   getId,
-  boardId,
-  board,
-  lanes,
-  laneCards,
+  data,
+  sort,
   onSetBoardTitle,
   onSetCardTitle,
   onMoveLane,
@@ -19,9 +35,12 @@ export const Board = ({
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const newLaneTitle = useRef(null);
 
+  const board = data[id];
+  const lanes = sort(getSet(data, id, "lanes"));
+
   return (
     <DragDropContext
-      onDragEnd={({ source, destination, type }) => {
+      onDragEnd={({ source, destination, type, draggableId }) => {
         if (
           !destination ||
           (source.droppableId && source.index) ===
@@ -32,14 +51,27 @@ export const Board = ({
 
         switch (type) {
           case "LANE":
-            onMoveLane(source.index, destination.index);
+            const cleanLanes = sort(
+              lanes.filter(l => getId(l) !== draggableId)
+            );
+            onMoveLane(
+              draggableId,
+              cleanLanes[destination.index - 1],
+              cleanLanes[destination.index]
+            );
             break;
           case "CARD":
+            const cleanCards = sort(
+              getSet(data, destination.droppableId, "cards").filter(
+                c => getId(c) !== draggableId
+              )
+            );
             onMoveCard(
+              draggableId,
               source.droppableId,
               destination.droppableId,
-              source.index,
-              destination.index
+              cleanCards[destination.index - 1],
+              cleanCards[destination.index]
             );
             break;
         }
@@ -68,7 +100,7 @@ export const Board = ({
             }}
             className="board-title"
           >
-            {(board && board.title) || boardId}
+            {(board && board.title) || id}
           </h1>
         )}
         <div className="board-content">
@@ -86,8 +118,9 @@ export const Board = ({
                       key={id}
                       getId={getId}
                       index={i}
-                      lane={lane}
-                      cards={laneCards[id]}
+                      id={id}
+                      data={data}
+                      sort={sort}
                       onSetLaneTitle={onSetLaneTitle}
                       onSetCardTitle={onSetCardTitle}
                       onCreateCard={onCreateCard}
@@ -117,14 +150,16 @@ export const Board = ({
 
 const Lane = ({
   getId,
-  lane,
-  cards,
+  id,
+  data,
+  sort,
   index,
   onSetCardTitle,
   onSetLaneTitle,
   onCreateCard
 }) => {
-  const id = getId(lane);
+  const lane = data[id];
+  const cards = sort(getSet(data, id, "cards"));
   const [editing, setEditing] = useState();
   const [laneTitle, setLaneTitle] = useState(lane.title);
   const newCardTitle = useRef(null);
@@ -176,9 +211,10 @@ const Lane = ({
                   return (
                     <Card
                       key={id}
+                      id={id}
+                      data={data}
                       getId={getId}
                       index={i}
-                      card={card}
                       onSetTitle={onSetCardTitle}
                     />
                   );
@@ -204,8 +240,8 @@ const Lane = ({
   );
 };
 
-const Card = ({ getId, index, card, onSetTitle }) => {
-  const id = getId(card);
+const Card = ({ getId, index, id, data, onSetTitle }) => {
+  const card = data[id];
   const [editing, setEditing] = useState();
   const [cardTitle, setCardTitle] = useState(card.title);
   return (
