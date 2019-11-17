@@ -14,7 +14,8 @@ const getSet = (data, id, key) => {
     .filter(key => key !== "_")
     .map(key => set[key])
     .filter(Boolean)
-    .map(ref => data[ref["#"]]);
+    .map(ref => data[ref["#"]])
+    .filter(Boolean);
   return arr;
 };
 
