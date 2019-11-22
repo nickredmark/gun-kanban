@@ -30,12 +30,7 @@ const getSet = (data, id, key) => {
   return arr;
 };
 
-export const GunBoard = ({
-  id,
-  sourceId,
-  sourceField,
-  cardTitleField = "title"
-}) => {
+export const GunBoard = ({ id, sourceId, sourceField, cardTitleField }) => {
   const [gun, setGun] = useState(null);
   const [cs, setCs] = useState(null);
   const rerender = useRerender();

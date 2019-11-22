@@ -23,9 +23,17 @@ html,
   margin: auto;
 }
 
+.page {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
 .board {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0%;
+  overflow-x: auto;
 }
 
 .board-title {
@@ -39,6 +47,8 @@ html,
   display: flex;
   flex-direction: row;
   align-items: flex-start;
+  flex: 1 1 auto;
+  overflow-x: auto;
 }
 
 .source {
@@ -102,4 +112,24 @@ input {
 
 .card:hover .card-link {
   visibility: visible;
+}
+
+.comments {
+  flex: none;
+  background-color: white;
+  width: 15rem;
+  max-width: 100%;
+  flex: none;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.comments h2 {
+  font-size: 100%;
+  margin: 0;
+}
+
+.comments iframe {
+  flex: 1 1 auto;
 }

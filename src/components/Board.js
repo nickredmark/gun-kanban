@@ -63,81 +63,90 @@ export const Board = ({
         }
       }}
     >
-      <div className="board">
-        {editing ? (
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              onSetBoardTitle(newBoardTitle);
-              setEditing(false);
-            }}
-          >
-            <input
-              value={newBoardTitle}
-              onChange={e => setNewBoardTitle(e.target.value)}
-              placeholder="board title"
-            />
-          </form>
-        ) : (
-          <h1
-            onDoubleClick={e => {
-              setNewBoardTitle(board.title);
-              setEditing(true);
-            }}
-            className="board-title"
-          >
-            {(board && board.title) || id}
-          </h1>
-        )}
-        <div className="board-content">
-          {source && (
-            <div className="source">
-              <SourceLane
-                getId={getId}
-                source={source}
-                sourceField={sourceField}
-                onSetCardTitle={onSetCardTitle}
-              />
-            </div>
-          )}
-          <Droppable droppableId="board" type="LANE" direction="horizontal">
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                className="lanes"
-                {...provided.droppableProps}
-              >
-                {board.lanes.map((lane, i) => {
-                  const id = getId(lane);
-                  return (
-                    <Lane
-                      key={id}
-                      getId={getId}
-                      index={i}
-                      id={id}
-                      lane={lane}
-                      onSetLaneTitle={onSetLaneTitle}
-                      onSetCardTitle={onSetCardTitle}
-                      onCreateCard={onCreateCard}
-                      source={source}
-                    />
-                  );
-                })}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-          <div className="new-lane">
+      <div className="page">
+        <div className="board">
+          {editing ? (
             <form
               onSubmit={e => {
                 e.preventDefault();
-                onCreateLane(newLaneTitle.current.value);
-                newLaneTitle.current.value = "";
+                onSetBoardTitle(newBoardTitle);
+                setEditing(false);
               }}
             >
-              <input ref={newLaneTitle} placeholder="new lane" />
+              <input
+                value={newBoardTitle}
+                onChange={e => setNewBoardTitle(e.target.value)}
+                placeholder="board title"
+              />
             </form>
+          ) : (
+            <h1
+              onDoubleClick={e => {
+                setNewBoardTitle(board.title);
+                setEditing(true);
+              }}
+              className="board-title"
+            >
+              {(board && board.title) || id}
+            </h1>
+          )}
+          <div className="board-content">
+            {source && (
+              <div className="source">
+                <SourceLane
+                  getId={getId}
+                  source={source}
+                  sourceField={sourceField}
+                  onSetCardTitle={onSetCardTitle}
+                />
+              </div>
+            )}
+            <Droppable droppableId="board" type="LANE" direction="horizontal">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  className="lanes"
+                  {...provided.droppableProps}
+                >
+                  {board.lanes.map((lane, i) => {
+                    const id = getId(lane);
+                    return (
+                      <Lane
+                        key={id}
+                        getId={getId}
+                        index={i}
+                        id={id}
+                        lane={lane}
+                        onSetLaneTitle={onSetLaneTitle}
+                        onSetCardTitle={onSetCardTitle}
+                        onCreateCard={onCreateCard}
+                        source={source}
+                      />
+                    );
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+            <div className="new-lane">
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  onCreateLane(newLaneTitle.current.value);
+                  newLaneTitle.current.value = "";
+                }}
+              >
+                <input ref={newLaneTitle} placeholder="new lane" />
+              </form>
+            </div>
           </div>
+        </div>
+        <div className="comments">
+          <h2>Discussion</h2>
+          <iframe
+            src={`https://gun-comments.nmaro.now.sh?commentable=${id}`}
+            frameBorder="0"
+          />
         </div>
       </div>
     </DragDropContext>

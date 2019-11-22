@@ -35,7 +35,7 @@ const App = () => {
       id={id}
       sourceId={sourceId}
       sourceField={sourceField}
-      cardTitleField={cardTitleField}
+      cardTitleField={cardTitleField || "title"}
     />
   );
 };
