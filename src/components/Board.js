@@ -1,29 +1,12 @@
 import React, { useState, useRef } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
-const getSet = (data, id, key) => {
-  const entity = data[id];
-  if (!entity || !entity[key]) {
-    return [];
-  }
-  const set = data[entity[key]["#"]];
-  if (!set) {
-    return [];
-  }
-  const arr = Object.keys(set)
-    .filter(key => key !== "_")
-    .map(key => set[key])
-    .filter(Boolean)
-    .map(ref => data[ref["#"]])
-    .filter(Boolean);
-  return arr;
-};
-
 export const Board = ({
   id,
   getId,
-  data,
-  sort,
+  board,
+  source,
+  sourceField,
   onSetBoardTitle,
   onSetCardTitle,
   onMoveLane,
@@ -36,15 +19,12 @@ export const Board = ({
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const newLaneTitle = useRef(null);
 
-  const board = data[id];
-  const lanes = sort(getSet(data, id, "lanes"));
-
   return (
     <DragDropContext
-      onDragEnd={({ source, destination, type, draggableId }) => {
+      onDragEnd={({ source: src, destination, type, draggableId }) => {
         if (
           !destination ||
-          (source.droppableId && source.index) ===
+          (src.droppableId && src.index) ===
             (destination.droppableId === destination.index)
         ) {
           return;
@@ -52,8 +32,8 @@ export const Board = ({
 
         switch (type) {
           case "LANE":
-            const cleanLanes = sort(
-              lanes.filter(l => getId(l) !== draggableId)
+            const cleanLanes = board.lanes.filter(
+              l => getId(l) !== draggableId
             );
             onMoveLane(
               draggableId,
@@ -62,14 +42,19 @@ export const Board = ({
             );
             break;
           case "CARD":
-            const cleanCards = sort(
-              getSet(data, destination.droppableId, "cards").filter(
+            let cleanCards;
+            if (source && destination.droppableId === getId(source)) {
+              cleanCards = source[sourceField].filter(
                 c => getId(c) !== draggableId
-              )
-            );
+              );
+            } else {
+              cleanCards = board.lanes
+                .find(card => getId(card) === destination.droppableId)
+                .cards.filter(c => getId(c) !== draggableId);
+            }
             onMoveCard(
               draggableId,
-              source.droppableId,
+              src.droppableId,
               destination.droppableId,
               cleanCards[destination.index - 1],
               cleanCards[destination.index]
@@ -105,6 +90,16 @@ export const Board = ({
           </h1>
         )}
         <div className="board-content">
+          {source && (
+            <div className="source">
+              <SourceLane
+                getId={getId}
+                source={source}
+                sourceField={sourceField}
+                onSetCardTitle={onSetCardTitle}
+              />
+            </div>
+          )}
           <Droppable droppableId="board" type="LANE" direction="horizontal">
             {(provided, snapshot) => (
               <div
@@ -112,7 +107,7 @@ export const Board = ({
                 className="lanes"
                 {...provided.droppableProps}
               >
-                {lanes.map((lane, i) => {
+                {board.lanes.map((lane, i) => {
                   const id = getId(lane);
                   return (
                     <Lane
@@ -120,11 +115,11 @@ export const Board = ({
                       getId={getId}
                       index={i}
                       id={id}
-                      data={data}
-                      sort={sort}
+                      lane={lane}
                       onSetLaneTitle={onSetLaneTitle}
                       onSetCardTitle={onSetCardTitle}
                       onCreateCard={onCreateCard}
+                      source={source}
                     />
                   );
                 })}
@@ -149,18 +144,81 @@ export const Board = ({
   );
 };
 
+const SourceLane = ({
+  getId,
+  source,
+  sourceField,
+  onSetSourceTitle,
+  onSetCardTitle
+}) => {
+  const [editing, setEditing] = useState();
+  const [sourceTitle, setSourceTitle] = useState(source.title);
+
+  return (
+    <div className="lane">
+      {editing ? (
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            onSetSourceTitle(sourceTitle);
+            setEditing(false);
+          }}
+        >
+          <input
+            autoFocus
+            value={sourceTitle}
+            onChange={e => setSourceTitle(e.target.value)}
+            placeholder="source title"
+          />
+        </form>
+      ) : (
+        <div
+          onDoubleClick={e => {
+            setSourceTitle(source.title);
+            setEditing(true);
+          }}
+          className="lane-title"
+        >
+          {source.title || "Source has title"}
+        </div>
+      )}
+      <Droppable droppableId={getId(source)} type="CARD">
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            className="cards"
+            {...provided.droppableProps}
+          >
+            {source[sourceField].map((card, i) => {
+              const id = getId(card);
+              return (
+                <Card
+                  key={id}
+                  id={id}
+                  card={card}
+                  getId={getId}
+                  index={i}
+                  onSetTitle={onSetCardTitle}
+                />
+              );
+            })}
+          </div>
+        )}
+      </Droppable>
+    </div>
+  );
+};
+
 const Lane = ({
   getId,
   id,
-  data,
-  sort,
+  lane,
   index,
   onSetCardTitle,
   onSetLaneTitle,
-  onCreateCard
+  onCreateCard,
+  source
 }) => {
-  const lane = data[id];
-  const cards = sort(getSet(data, id, "cards"));
   const [editing, setEditing] = useState();
   const [laneTitle, setLaneTitle] = useState(lane.title);
   const newCardTitle = useRef(null);
@@ -207,13 +265,13 @@ const Lane = ({
                 className="cards"
                 {...provided.droppableProps}
               >
-                {(cards || []).map((card, i) => {
+                {lane.cards.map((card, i) => {
                   const id = getId(card);
                   return (
                     <Card
                       key={id}
                       id={id}
-                      data={data}
+                      card={card}
                       getId={getId}
                       index={i}
                       onSetTitle={onSetCardTitle}
@@ -224,25 +282,26 @@ const Lane = ({
               </div>
             )}
           </Droppable>
-          <div className="new-card">
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                onCreateCard(id, newCardTitle.current.value);
-                newCardTitle.current.value = "";
-              }}
-            >
-              <input ref={newCardTitle} placeholder="new card" />
-            </form>
-          </div>
+          {!source && (
+            <div className="new-card">
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  onCreateCard(id, newCardTitle.current.value);
+                  newCardTitle.current.value = "";
+                }}
+              >
+                <input ref={newCardTitle} placeholder="new card" />
+              </form>
+            </div>
+          )}
         </div>
       )}
     </Draggable>
   );
 };
 
-const Card = ({ getId, index, id, data, onSetTitle }) => {
-  const card = data[id];
+const Card = ({ getId, index, id, card, onSetTitle }) => {
   const [editing, setEditing] = useState();
   const [cardTitle, setCardTitle] = useState(card.title);
   return (

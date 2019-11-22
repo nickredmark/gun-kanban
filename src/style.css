@@ -1,92 +1,105 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-body, html {
-    margin: 0;
-    padding: 0;
-    font-family: sans-serif;
-    background-color: blue;
+body,
+html {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background-color: blue;
 }
 
-body, html, #app {
-    width: 100%;
-    height: 100%;
-    display: flex;
+body,
+html,
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
 }
 
 .new-board {
-    width: 20rem;
-    margin: auto;
+  width: 20rem;
+  margin: auto;
 }
 
 .board {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .board-title {
-    font-size: 120%;
-    color: white;
-    margin: 0.5rem;
-    cursor: pointer;
+  font-size: 120%;
+  color: white;
+  margin: 0.5rem;
+  cursor: pointer;
 }
 
 .board-content {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.source {
+  margin-right: 2rem;
+}
+
+.source .lane {
+  background-color: rgb(162, 176, 253);
 }
 
 .lanes {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
 }
 
-.lane, .new-lane {
-    background-color: lightgray;
-    width: 12rem;
-    margin: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+.lane,
+.new-lane {
+  background-color: lightgray;
+  width: 12rem;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .lane-title {
-    cursor: pointer;
-    font-weight: bold;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 input {
-    width: 100%
+  width: 100%;
 }
 
 .cards {
-    display: flex;
-    min-height: 10rem;
-    flex-direction: column;
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
 }
 
-.card, .new-card {
-    background-color: white;
-    padding: 0.25rem;
-    margin: 0.25rem;
-    border-radius: 0.25rem;
+.card,
+.new-card {
+  background-color: white;
+  padding: 0.25rem;
+  margin: 0.25rem;
+  border-radius: 0.25rem;
 }
 
 .card-link {
-    color: lightgray;
-    text-decoration: none;
-    display: block;
-    visibility: hidden;
-    float: right;
-    font-size: 80%;
+  color: lightgray;
+  text-decoration: none;
+  display: block;
+  visibility: hidden;
+  float: right;
+  font-size: 80%;
 }
 
 .card:hover .card-link {
-    visibility: visible;    
+  visibility: visible;
 }

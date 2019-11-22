@@ -9,6 +9,9 @@ const App = () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get("board");
+  const sourceId = urlParams.get("source");
+  const sourceField = urlParams.get("sourcefield");
+  const cardTitleField = urlParams.get("cardtitlefield");
 
   if (!id) {
     return (
@@ -27,7 +30,14 @@ const App = () => {
     );
   }
 
-  return <GunBoard id={id} />;
+  return (
+    <GunBoard
+      id={id}
+      sourceId={sourceId}
+      sourceField={sourceField}
+      cardTitleField={cardTitleField}
+    />
+  );
 };
 
 export default hot(App);

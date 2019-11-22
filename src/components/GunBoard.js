@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 
 const Gun = require("gun/gun");
 
-const getId = element => element["_"]["#"];
+const getId = element => element && element["_"] && element["_"]["#"];
 
 const useRerender = () => {
   const [, setRender] = useState({});
@@ -12,7 +12,30 @@ const useRerender = () => {
   return rerender;
 };
 
-export const GunBoard = ({ id }) => {
+const getSet = (data, id, key) => {
+  const entity = data[id];
+  if (!entity || !entity[key]) {
+    return [];
+  }
+  const set = data[entity[key]["#"]];
+  if (!set) {
+    return [];
+  }
+  const arr = Object.keys(set)
+    .filter(key => key !== "_")
+    .map(key => set[key])
+    .filter(Boolean)
+    .map(ref => data[ref["#"]])
+    .filter(Boolean);
+  return arr;
+};
+
+export const GunBoard = ({
+  id,
+  sourceId,
+  sourceField,
+  cardTitleField = "title"
+}) => {
   const [gun, setGun] = useState(null);
   const [cs, setCs] = useState(null);
   const rerender = useRerender();
@@ -37,6 +60,15 @@ export const GunBoard = ({ id }) => {
         .get("cards")
         .map()
         .on(rerender);
+
+      if (sourceId && sourceField) {
+        gun
+          .get(sourceId)
+          .on(rerender)
+          .get(sourceField)
+          .map()
+          .on(rerender);
+      }
     }
   }, [gun]);
 
@@ -45,11 +77,44 @@ export const GunBoard = ({ id }) => {
   }
 
   const data = gun._.graph;
+  const board = {
+    ...data[id],
+    lanes: cs.sort(
+      getSet(data, id, "lanes").map(lane => ({
+        ...lane,
+        cards: cs.sort(
+          getSet(data, getId(lane), "cards").map(card => ({
+            ...card,
+            title: card[cardTitleField]
+          }))
+        )
+      }))
+    )
+  };
+  const source = sourceId &&
+    sourceField && {
+      ...data[sourceId],
+      [sourceField]: cs.sort(
+        getSet(data, sourceId, sourceField)
+          .filter(
+            card =>
+              !board.lanes.some(lane =>
+                lane.cards.some(c => getId(c) === getId(card))
+              )
+          )
+          .map(card => ({
+            ...card,
+            title: card[cardTitleField]
+          }))
+      )
+    };
 
   return (
     <Board
       getId={getId}
-      data={data}
+      board={board}
+      source={source}
+      sourceField={sourceField}
       sort={cs.sort}
       id={id}
       onCreateLane={title =>
@@ -65,7 +130,7 @@ export const GunBoard = ({ id }) => {
           .get(id)
           .get("cards")
           .set({
-            title
+            [cardTitleField]: title
           })
       }
       onSetBoardTitle={title =>
@@ -77,7 +142,7 @@ export const GunBoard = ({ id }) => {
       onSetCardTitle={(id, title) =>
         gun
           .get(id)
-          .get("title")
+          .get(cardTitleField)
           .put(title)
       }
       onSetLaneTitle={(id, title) =>
@@ -89,12 +154,17 @@ export const GunBoard = ({ id }) => {
       onMoveLane={(id, prev, next) => cs.move(id, prev, next)}
       onMoveCard={(id, sourceLaneId, destinationLaneId, prev, next) => {
         cs.move(id, prev, next);
-        if (sourceLaneId !== destinationLaneId) {
+        if (sourceLaneId === destinationLaneId) {
+          return;
+        }
+        if (sourceLaneId) {
           gun
             .get(sourceLaneId)
             .get("cards")
             .get(id)
             .put(null);
+        }
+        if (destinationLaneId) {
           gun
             .get(destinationLaneId)
             .get("cards")
