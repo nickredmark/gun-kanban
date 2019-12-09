@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { getId } from "nicks-gun-utils";
 
@@ -17,6 +17,10 @@ export const Board = ({
   const [editing, setEditing] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const newLaneTitle = useRef(null);
+
+  useEffect(() => {
+    document.title = board.title || "GUN Kanban";
+  }, [board.title]);
 
   return (
     <DragDropContext
