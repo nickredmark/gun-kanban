@@ -1,105 +1,102 @@
 import { Board } from "./Board";
 import { GunContinuousSequence } from "crdt-continuous-sequence";
 import React, { useState, useEffect } from "react";
+import { useGun, getPub, getSet, getId, getUUID } from "nicks-gun-utils";
 
 const Gun = require("gun/gun");
+require("gun/sea");
+require("gun/sea");
+require("gun/lib/radix");
+require("gun/lib/radisk");
+require("gun/lib/store");
+require("gun/lib/rindexed");
 
-const getId = element => element["_"]["#"];
-
-const useRerender = () => {
-  const [, setRender] = useState({});
-  const rerender = () => setRender({});
-  return rerender;
-};
-
-export const GunBoard = ({ id }) => {
+export const GunBoard = ({ id, priv, epriv }) => {
   const [gun, setGun] = useState(null);
-  const [cs, setCs] = useState(null);
-  const rerender = useRerender();
+  const pub = getPub(id);
+  const pair = pub && priv && { pub, priv, epriv };
+  const [data, onData, put] = useGun(Gun, gun, useState, pair);
 
   useEffect(() => {
     const gun = Gun({
-      peers: ["https://gunjs.herokuapp.com/gun"]
+      peers: [
+        "https://gunjs.herokuapp.com/gun",
+        "https://nicks-gun-server.herokuapp.com/gun"
+      ]
     });
-    const cs = new GunContinuousSequence(gun);
+    gun.get(id).on(onData);
+    gun
+      .get(`${id}.lanes`)
+      .on(onData)
+      .map()
+      .on(onData)
+      .once(lane =>
+        gun
+          .get(`${getId(lane)}.cards`)
+          .on(onData)
+          .map()
+          .on(onData)
+      );
     setGun(gun);
-    setCs(cs);
   }, []);
 
-  useEffect(() => {
-    if (gun) {
-      gun
-        .get(id)
-        .on(rerender)
-        .get("lanes")
-        .map()
-        .on(rerender)
-        .get("cards")
-        .map()
-        .on(rerender);
-    }
-  }, [gun]);
+  const cs = new GunContinuousSequence(gun);
 
-  if (!gun || !cs) {
+  if (!gun) {
     return <div>Loading...</div>;
   }
 
-  const data = gun._.graph;
+  const board = {
+    ...data[id],
+    lanes: cs.sort(
+      getSet(data, `${id}.lanes`).map(lane => {
+        return {
+          ...lane,
+          cards: cs.sort(getSet(data, `${getId(lane)}.cards`))
+        };
+      })
+    )
+  };
 
   return (
     <Board
-      getId={getId}
-      data={data}
-      sort={cs.sort}
+      board={board}
       id={id}
-      onCreateLane={title =>
-        gun
-          .get(id)
-          .get("lanes")
-          .set({
-            title
-          })
+      writable={!pub || priv}
+      onCreateLane={title => {
+        const key = getUUID(gun);
+        const laneId = `${id}.lanes.${key}`;
+        put([laneId, "title", title], [`${id}.lanes`, key, { "#": laneId }]);
+      }}
+      onCreateCard={(laneId, title) => {
+        const key = getUUID(gun);
+        const cardId = `${id}.cards.${key}`;
+        put(
+          [cardId, "title", title],
+          [`${laneId}.cards`, key, { "#": cardId }]
+        );
+      }}
+      onSetBoardTitle={title => put([id, "title", title])}
+      onSetCardTitle={(id, title) => put([id, "title", title])}
+      onSetLaneTitle={(id, title) => put([id, "title", title])}
+      onMoveLane={(id, prev, next) =>
+        put([id, "index", JSON.stringify(cs.getIndexBetween(id, prev, next))])
       }
-      onCreateCard={(id, title) =>
-        gun
-          .get(id)
-          .get("cards")
-          .set({
-            title
-          })
-      }
-      onSetBoardTitle={title =>
-        gun
-          .get(id)
-          .get("title")
-          .put(title)
-      }
-      onSetCardTitle={(id, title) =>
-        gun
-          .get(id)
-          .get("title")
-          .put(title)
-      }
-      onSetLaneTitle={(id, title) =>
-        gun
-          .get(id)
-          .get("title")
-          .put(title)
-      }
-      onMoveLane={(id, prev, next) => cs.move(id, prev, next)}
       onMoveCard={(id, sourceLaneId, destinationLaneId, prev, next) => {
-        cs.move(id, prev, next);
+        const puts = [];
+        puts.push([
+          id,
+          "index",
+          JSON.stringify(cs.getIndexBetween(id, prev, next))
+        ]);
         if (sourceLaneId !== destinationLaneId) {
-          gun
-            .get(sourceLaneId)
-            .get("cards")
-            .get(id)
-            .put(null);
-          gun
-            .get(destinationLaneId)
-            .get("cards")
-            .set(data[id]);
+          const key = /[\w\-]+$/.exec(id)[0];
+          puts.push(
+            [`${sourceLaneId}.cards`, key, null],
+            [`${destinationLaneId}.cards`, key, { "#": id }]
+          );
         }
+        put(...puts);
       }}
     />
   );

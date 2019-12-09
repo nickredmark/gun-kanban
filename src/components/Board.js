@@ -1,28 +1,11 @@
 import React, { useState, useRef } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
-
-const getSet = (data, id, key) => {
-  const entity = data[id];
-  if (!entity || !entity[key]) {
-    return [];
-  }
-  const set = data[entity[key]["#"]];
-  if (!set) {
-    return [];
-  }
-  const arr = Object.keys(set)
-    .filter(key => key !== "_")
-    .map(key => set[key])
-    .filter(Boolean)
-    .map(ref => data[ref["#"]]);
-  return arr;
-};
+import { getId } from "nicks-gun-utils";
 
 export const Board = ({
   id,
-  getId,
-  data,
-  sort,
+  board,
+  writable,
   onSetBoardTitle,
   onSetCardTitle,
   onMoveLane,
@@ -34,9 +17,6 @@ export const Board = ({
   const [editing, setEditing] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const newLaneTitle = useRef(null);
-
-  const board = data[id];
-  const lanes = sort(getSet(data, id, "lanes"));
 
   return (
     <DragDropContext
@@ -51,8 +31,8 @@ export const Board = ({
 
         switch (type) {
           case "LANE":
-            const cleanLanes = sort(
-              lanes.filter(l => getId(l) !== draggableId)
+            const cleanLanes = board.lanes.filter(
+              l => getId(l) !== draggableId
             );
             onMoveLane(
               draggableId,
@@ -61,11 +41,9 @@ export const Board = ({
             );
             break;
           case "CARD":
-            const cleanCards = sort(
-              getSet(data, destination.droppableId, "cards").filter(
-                c => getId(c) !== draggableId
-              )
-            );
+            const cleanCards = board.lanes
+              .find(lane => getId(lane) === destination.droppableId)
+              .cards.filter(c => getId(c) !== draggableId);
             onMoveCard(
               draggableId,
               source.droppableId,
@@ -87,6 +65,7 @@ export const Board = ({
             }}
           >
             <input
+              autoFocus
               value={newBoardTitle}
               onChange={e => setNewBoardTitle(e.target.value)}
               placeholder="board title"
@@ -94,33 +73,40 @@ export const Board = ({
           </form>
         ) : (
           <h1
-            onDoubleClick={e => {
-              setNewBoardTitle(board.title);
-              setEditing(true);
-            }}
+            onDoubleClick={
+              writable &&
+              (e => {
+                setNewBoardTitle(board.title);
+                setEditing(true);
+              })
+            }
             className="board-title"
           >
             {(board && board.title) || id}
           </h1>
         )}
         <div className="board-content">
-          <Droppable droppableId="board" type="LANE" direction="horizontal">
+          <Droppable
+            droppableId="board"
+            type="LANE"
+            direction="horizontal"
+            isDropDisabled={!writable}
+          >
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
                 className="lanes"
                 {...provided.droppableProps}
               >
-                {lanes.map((lane, i) => {
+                {board.lanes.map((lane, i) => {
                   const id = getId(lane);
                   return (
                     <Lane
                       key={id}
-                      getId={getId}
                       index={i}
+                      writable={writable}
                       id={id}
-                      data={data}
-                      sort={sort}
+                      lane={lane}
                       onSetLaneTitle={onSetLaneTitle}
                       onSetCardTitle={onSetCardTitle}
                       onCreateCard={onCreateCard}
@@ -131,17 +117,19 @@ export const Board = ({
               </div>
             )}
           </Droppable>
-          <div className="new-lane">
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                onCreateLane(newLaneTitle.current.value);
-                newLaneTitle.current.value = "";
-              }}
-            >
-              <input ref={newLaneTitle} placeholder="new lane" />
-            </form>
-          </div>
+          {writable && (
+            <div className="new-lane">
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  onCreateLane(newLaneTitle.current.value);
+                  newLaneTitle.current.value = "";
+                }}
+              >
+                <input ref={newLaneTitle} placeholder="new lane" />
+              </form>
+            </div>
+          )}
         </div>
       </div>
     </DragDropContext>
@@ -149,23 +137,20 @@ export const Board = ({
 };
 
 const Lane = ({
-  getId,
   id,
-  data,
-  sort,
+  lane,
+  writable,
   index,
   onSetCardTitle,
   onSetLaneTitle,
   onCreateCard
 }) => {
-  const lane = data[id];
-  const cards = sort(getSet(data, id, "cards"));
   const [editing, setEditing] = useState();
   const [laneTitle, setLaneTitle] = useState(lane.title);
   const newCardTitle = useRef(null);
 
   return (
-    <Draggable draggableId={id} index={index}>
+    <Draggable draggableId={id} index={index} isDragDisabled={!writable}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -190,30 +175,33 @@ const Lane = ({
             </form>
           ) : (
             <div
-              onDoubleClick={e => {
-                setLaneTitle(lane.title);
-                setEditing(true);
-              }}
+              onDoubleClick={
+                writable &&
+                (e => {
+                  setLaneTitle(lane.title);
+                  setEditing(true);
+                })
+              }
               className="lane-title"
             >
               {lane.title || "No title"}
             </div>
           )}
-          <Droppable droppableId={id} type="CARD">
+          <Droppable droppableId={id} type="CARD" isDropDisabled={!writable}>
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
                 className="cards"
                 {...provided.droppableProps}
               >
-                {(cards || []).map((card, i) => {
+                {lane.cards.map((card, i) => {
                   const id = getId(card);
                   return (
                     <Card
                       key={id}
                       id={id}
-                      data={data}
-                      getId={getId}
+                      card={card}
+                      writable={writable}
                       index={i}
                       onSetTitle={onSetCardTitle}
                     />
@@ -223,29 +211,30 @@ const Lane = ({
               </div>
             )}
           </Droppable>
-          <div className="new-card">
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                onCreateCard(id, newCardTitle.current.value);
-                newCardTitle.current.value = "";
-              }}
-            >
-              <input ref={newCardTitle} placeholder="new card" />
-            </form>
-          </div>
+          {writable && (
+            <div className="new-card">
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  onCreateCard(id, newCardTitle.current.value);
+                  newCardTitle.current.value = "";
+                }}
+              >
+                <input ref={newCardTitle} placeholder="new card" />
+              </form>
+            </div>
+          )}
         </div>
       )}
     </Draggable>
   );
 };
 
-const Card = ({ getId, index, id, data, onSetTitle }) => {
-  const card = data[id];
+const Card = ({ index, id, card, writable, onSetTitle }) => {
   const [editing, setEditing] = useState();
   const [cardTitle, setCardTitle] = useState(card.title);
   return (
-    <Draggable draggableId={id} index={index}>
+    <Draggable draggableId={id} index={index} isDragDisabled={!writable}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -270,10 +259,13 @@ const Card = ({ getId, index, id, data, onSetTitle }) => {
             </form>
           ) : (
             <div
-              onDoubleClick={e => {
-                setCardTitle(card.title);
-                setEditing(true);
-              }}
+              onDoubleClick={
+                writable &&
+                (e => {
+                  setCardTitle(card.title);
+                  setEditing(true);
+                })
+              }
               className="card-title"
             >
               {card.title || "No title"}{" "}
