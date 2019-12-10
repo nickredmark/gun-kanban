@@ -166,7 +166,7 @@ const Lane = ({
             <form
               onSubmit={e => {
                 e.preventDefault();
-                onSetLaneTitle(laneTitle);
+                onSetLaneTitle(id, laneTitle);
                 setEditing(false);
               }}
             >
