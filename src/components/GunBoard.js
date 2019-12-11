@@ -19,8 +19,8 @@ export const GunBoard = ({ id, priv, epriv }) => {
 
   useEffect(() => {
     const gun = Gun({
-		localStorage: false,
-		peers: ["https://gunjs.herokuapp.com/gun", "http://nmr.io:8765/gun"],
+      localStorage: false,
+      peers: ["https://gunjs.herokuapp.com/gun", "http://nmr.io:8765/gun"]
     });
     gun.get(id).on(onData);
     gun
@@ -64,14 +64,21 @@ export const GunBoard = ({ id, priv, epriv }) => {
       onCreateLane={title => {
         const key = getUUID(gun);
         const laneId = `${id}.lanes.${key}`;
-        put([laneId, "title", title], [`${id}.lanes`, key, { "#": laneId }]);
+        put(
+          [laneId, "title", title],
+          [`${id}.lanes`, key, { "#": laneId }],
+          [id, "updated", +new Date()],
+          [id, "lastUpdate", `New Lane: "${title}"`]
+        );
       }}
       onCreateCard={(laneId, title) => {
         const key = getUUID(gun);
         const cardId = `${id}.cards.${key}`;
         put(
           [cardId, "title", title],
-          [`${laneId}.cards`, key, { "#": cardId }]
+          [`${laneId}.cards`, key, { "#": cardId }],
+          [id, "updated", +new Date()],
+          [id, "lastUpdate", `New Card: "${title}"`]
         );
       }}
       onSetBoardTitle={title => put([id, "title", title])}
@@ -80,18 +87,26 @@ export const GunBoard = ({ id, priv, epriv }) => {
       onMoveLane={(id, prev, next) =>
         put([id, "index", JSON.stringify(cs.getIndexBetween(id, prev, next))])
       }
-      onMoveCard={(id, sourceLaneId, destinationLaneId, prev, next) => {
+      onMoveCard={(cardId, sourceLaneId, destinationLaneId, prev, next) => {
         const puts = [];
         puts.push([
-          id,
+          cardId,
           "index",
-          JSON.stringify(cs.getIndexBetween(id, prev, next))
+          JSON.stringify(cs.getIndexBetween(cardId, prev, next))
         ]);
         if (sourceLaneId !== destinationLaneId) {
-          const key = /[\w\-]+$/.exec(id)[0];
+          const key = /[\w\-]+$/.exec(cardId)[0];
           puts.push(
             [`${sourceLaneId}.cards`, key, null],
-            [`${destinationLaneId}.cards`, key, { "#": id }]
+            [`${destinationLaneId}.cards`, key, { "#": cardId }],
+            [id, "updated", +new Date()],
+            [
+              id,
+              "lastUpdate",
+              `"${data[cardId] && data[cardId].title}" moved to "${data[
+                destinationLaneId
+              ] && data[destinationLaneId].title}"`
+            ]
           );
         }
         put(...puts);
